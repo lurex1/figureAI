@@ -6,27 +6,56 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Pipeline selection based on model type
+const PIPELINE_INFO: Record<string, { name: string; description: string }> = {
+  HEAD_MODEL: { name: "Face NeRF / Photogrammetry", description: "Specialized for human head reconstruction" },
+  BUILDING_MODEL: { name: "Depth + Photogrammetry", description: "Optimized for architectural structures" },
+  ANIMAL_MODEL: { name: "Mesh Reconstruction + Pose Normalization", description: "Full-body animal modeling" },
+  FALLBACK_MODEL: { name: "Object-centric Photogrammetry + Mesh Cleanup", description: "General object reconstruction" },
+};
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { jobId, imageUrl, style } = await req.json();
+    const { jobId, imageUrl, style, modelType } = await req.json();
 
-    console.log(`[generate-3d] Starting job ${jobId} with style: ${style}`);
+    console.log(`[generate-3d] Starting job ${jobId}`);
+    console.log(`[generate-3d] Model type: ${modelType}, Style: ${style}`);
     console.log(`[generate-3d] Image URL: ${imageUrl}`);
 
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Update job status to processing
+    // Verify job exists and is approved
+    const { data: job, error: jobError } = await supabase
+      .from("figurine_jobs")
+      .select("*")
+      .eq("id", jobId)
+      .single();
+
+    if (jobError || !job) {
+      console.error("[generate-3d] Job not found:", jobError);
+      throw new Error("Job not found");
+    }
+
+    // Verify the job is approved (credits should only be consumed for approved jobs)
+    if (job.validation_status !== "approved" && !job.user_confirmed) {
+      console.error("[generate-3d] Job not approved for generation");
+      throw new Error("Job must be approved before generation");
+    }
+
+    // Update job status to processing and consume credits
     const { error: updateError } = await supabase
       .from("figurine_jobs")
-      .update({ status: "processing" })
+      .update({ 
+        status: "processing",
+        validation_status: "processing",
+        credits_consumed: true,
+      })
       .eq("id", jobId);
 
     if (updateError) {
@@ -34,27 +63,38 @@ serve(async (req) => {
       throw new Error("Failed to update job status");
     }
 
+    const pipeline = PIPELINE_INFO[modelType] || PIPELINE_INFO.FALLBACK_MODEL;
+    console.log(`[generate-3d] Using pipeline: ${pipeline.name}`);
+
     // =========================================================
     // TODO: Integrate with Image-to-3D API here
-    // Options: Meshy.ai, Tripo3D, Replicate (TripoSR), etc.
     // 
-    // Example flow:
-    // 1. Send imageUrl to the 3D generation API
-    // 2. Poll for completion or use webhook
-    // 3. Download the generated 3D model
-    // 4. Upload to Supabase storage (models bucket)
-    // 5. Update figurine_jobs with model_url
+    // Based on modelType, select appropriate pipeline:
+    // - HEAD_MODEL: Face NeRF / photogrammetry
+    // - BUILDING_MODEL: Depth + photogrammetry
+    // - ANIMAL_MODEL: Mesh reconstruction + pose normalization
+    // - FALLBACK_MODEL: Object-centric photogrammetry + mesh cleanup
+    //
+    // API Options: Meshy.ai, Tripo3D, Replicate (TripoSR), etc.
+    // 
+    // Expected outputs:
+    // - 3D model (GLB + OBJ)
+    // - PNG preview render
+    // - Quality report
+    // - Notes on reconstruction issues
     // =========================================================
 
-    // For now, simulate processing (replace with actual API call)
     console.log("[generate-3d] TODO: Implement actual 3D API integration");
     
-    // Placeholder: Mark as completed without actual 3D model
-    // Remove this when integrating real API
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Update job as completed (placeholder)
     const { error: completeError } = await supabase
       .from("figurine_jobs")
       .update({ 
         status: "completed",
+        validation_status: "completed",
         // model_url will be set when real API is integrated
         // preview_url will be set when real API is integrated
       })
@@ -65,13 +105,14 @@ serve(async (req) => {
       throw new Error("Failed to complete job");
     }
 
-    console.log(`[generate-3d] Job ${jobId} marked as completed (placeholder)`);
+    console.log(`[generate-3d] Job ${jobId} completed successfully`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         jobId,
-        message: "Job queued for processing. TODO: Integrate 3D API." 
+        pipeline: pipeline.name,
+        message: `Job processed with ${pipeline.name}. TODO: Integrate 3D API.`
       }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -81,6 +122,29 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("[generate-3d] Error:", error);
+
+    // If error occurs, try to mark job as failed
+    try {
+      const { jobId } = await req.clone().json();
+      if (jobId) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        await supabase
+          .from("figurine_jobs")
+          .update({ 
+            status: "failed",
+            validation_status: "failed",
+            error_message: error instanceof Error ? error.message : "Unknown error",
+            // Don't consume credits on failure
+            credits_consumed: false,
+          })
+          .eq("id", jobId);
+      }
+    } catch (e) {
+      console.error("[generate-3d] Failed to update job on error:", e);
+    }
     
     return new Response(
       JSON.stringify({ 

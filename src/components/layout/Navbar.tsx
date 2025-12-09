@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Box, Menu, X } from "lucide-react";
+import { Box, Menu, X, Crown, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -13,6 +14,8 @@ const navItems = [
 export function Navbar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, signOut, subscription } = useAuth();
+  const isPro = subscription.plan === "pro" && subscription.subscribed;
 
   return (
     <motion.header
@@ -28,9 +31,9 @@ export function Navbar() {
               <Box className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-mono text-lg font-bold">FigureAI</span>
+            {isPro && <Crown className="w-4 h-4 text-primary" />}
           </Link>
 
-          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
             {navItems.map((item) => (
               <Link
@@ -46,29 +49,33 @@ export function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
+            {user ? (
+              <>
+                <span className="text-sm text-muted-foreground">{user.email}</span>
+                <Button variant="ghost" size="sm" onClick={signOut}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
             <Button variant="hero" size="sm" asChild>
               <Link to="/create">Create Figurine</Link>
             </Button>
           </div>
 
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
+          <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </nav>
 
-        {/* Mobile menu */}
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
             className="md:hidden py-4 border-t border-border/50"
           >
             <div className="flex flex-col gap-4">
@@ -85,7 +92,16 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
-                <Button variant="ghost">Sign In</Button>
+                {user ? (
+                  <Button variant="ghost" onClick={signOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                ) : (
+                  <Button variant="ghost" asChild>
+                    <Link to="/auth">Sign In</Link>
+                  </Button>
+                )}
                 <Button variant="hero" asChild>
                   <Link to="/create">Create Figurine</Link>
                 </Button>

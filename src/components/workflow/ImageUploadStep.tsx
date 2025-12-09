@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Upload, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon, X, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ interface ImageUploadStepProps {
 export function ImageUploadStep({ onUpload, isUploading, isAnalyzing }: ImageUploadStepProps) {
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -32,16 +33,27 @@ export function ImageUploadStep({ onUpload, isUploading, isAnalyzing }: ImageUpl
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith("image/")) {
         setPreview(URL.createObjectURL(file));
-        onUpload(file);
+        setSelectedFile(file);
       }
     }
-  }, [onUpload]);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setPreview(URL.createObjectURL(file));
-      onUpload(file);
+      setSelectedFile(file);
+    }
+  };
+
+  const handleClear = () => {
+    setPreview(null);
+    setSelectedFile(null);
+  };
+
+  const handleProceed = () => {
+    if (selectedFile) {
+      onUpload(selectedFile);
     }
   };
 
@@ -69,22 +81,36 @@ export function ImageUploadStep({ onUpload, isUploading, isAnalyzing }: ImageUpl
         onDragOver={handleDrag}
         onDrop={handleDrop}
       >
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          disabled={isLoading}
-        />
+        {!preview && (
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={isLoading}
+          />
+        )}
 
         <div className="flex flex-col items-center justify-center min-h-[200px]">
           {preview ? (
-            <div className="relative">
+            <div className="relative w-full">
+              {/* Clear button */}
+              {!isLoading && (
+                <button
+                  onClick={handleClear}
+                  className="absolute -top-2 -right-2 z-10 p-2 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-lg"
+                  title="Usuń zdjęcie"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              
               <img
                 src={preview}
                 alt="Preview"
-                className="max-h-64 rounded-lg object-contain"
+                className="max-h-64 mx-auto rounded-lg object-contain"
               />
+              
               {isLoading && (
                 <div className="absolute inset-0 bg-background/80 rounded-lg flex items-center justify-center">
                   <div className="flex flex-col items-center gap-2">
@@ -115,6 +141,20 @@ export function ImageUploadStep({ onUpload, isUploading, isAnalyzing }: ImageUpl
           )}
         </div>
       </div>
+
+      {/* Action buttons when image is selected */}
+      {preview && !isLoading && (
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={handleClear} className="flex-1">
+            <X className="w-4 h-4 mr-2" />
+            Change Photo
+          </Button>
+          <Button onClick={handleProceed} className="flex-1">
+            Analyze Image
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      )}
 
       <div className="bg-muted/50 rounded-lg p-4">
         <h3 className="font-medium text-foreground mb-2">Supported Model Types:</h3>

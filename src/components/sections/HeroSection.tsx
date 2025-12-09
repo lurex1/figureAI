@@ -43,7 +43,7 @@ export function HeroSection() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Button variant="hero" size="xl" asChild>
-                <Link to="/upload">
+                <Link to="/create">
                   <Upload className="w-5 h-5" />
                   Start Creating
                 </Link>

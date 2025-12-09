@@ -50,7 +50,7 @@ export function Navbar() {
               Sign In
             </Button>
             <Button variant="hero" size="sm" asChild>
-              <Link to="/upload">Create Figurine</Link>
+              <Link to="/create">Create Figurine</Link>
             </Button>
           </div>
 
@@ -87,7 +87,7 @@ export function Navbar() {
               <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
                 <Button variant="ghost">Sign In</Button>
                 <Button variant="hero" asChild>
-                  <Link to="/upload">Create Figurine</Link>
+                  <Link to="/create">Create Figurine</Link>
                 </Button>
               </div>
             </div>

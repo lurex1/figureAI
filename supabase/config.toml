@@ -1,4 +1,10 @@
 project_id = "jctazmnlozmimjlrnfzq"
 
+[api]
+enabled = true
+
 [functions.generate-3d]
+verify_jwt = false
+
+[functions.analyze-image]
 verify_jwt = false

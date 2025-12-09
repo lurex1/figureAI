@@ -16,40 +16,64 @@ export type Database = {
     Tables: {
       figurine_jobs: {
         Row: {
+          additional_images: string[] | null
           created_at: string
+          credits_consumed: boolean | null
+          detected_object: string | null
           error_message: string | null
           id: string
+          model_type: string | null
           model_url: string | null
           original_image_url: string
           preview_url: string | null
+          quality_report: Json | null
+          rejection_reason: string | null
           status: string
           style: string
           updated_at: string
+          user_confirmed: boolean | null
           user_id: string | null
+          validation_status: string | null
         }
         Insert: {
+          additional_images?: string[] | null
           created_at?: string
+          credits_consumed?: boolean | null
+          detected_object?: string | null
           error_message?: string | null
           id?: string
+          model_type?: string | null
           model_url?: string | null
           original_image_url: string
           preview_url?: string | null
+          quality_report?: Json | null
+          rejection_reason?: string | null
           status?: string
           style: string
           updated_at?: string
+          user_confirmed?: boolean | null
           user_id?: string | null
+          validation_status?: string | null
         }
         Update: {
+          additional_images?: string[] | null
           created_at?: string
+          credits_consumed?: boolean | null
+          detected_object?: string | null
           error_message?: string | null
           id?: string
+          model_type?: string | null
           model_url?: string | null
           original_image_url?: string
           preview_url?: string | null
+          quality_report?: Json | null
+          rejection_reason?: string | null
           status?: string
           style?: string
           updated_at?: string
+          user_confirmed?: boolean | null
           user_id?: string | null
+          validation_status?: string | null
         }
         Relationships: []
       }

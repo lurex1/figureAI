@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      figurine_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          model_url: string | null
+          original_image_url: string
+          preview_url: string | null
+          status: string
+          style: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          model_url?: string | null
+          original_image_url: string
+          preview_url?: string | null
+          status?: string
+          style: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          model_url?: string | null
+          original_image_url?: string
+          preview_url?: string | null
+          status?: string
+          style?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

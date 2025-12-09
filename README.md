@@ -1,4 +1,59 @@
-# Welcome to your Lovable project
+# PhotoToFigure AI
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Turn your photos into **printable 3D figurines** with AI!  
+Upload a single image of a person, animal, building, or object, and get a fully-prepared 3D model ready for **3D printing, games, or collectibles**.
+
+---
+
+## 🚀 Features
+
+- **Upload your photo** (front/head, full-body animal, building, or object)
+- **Automatic AI classification**:
+  - Human Head
+  - Animal (full body)
+  - Building / Architecture
+  - Fallback Object (smart extraction if no main category matches)
+- **Strict quality validation**:
+  - Reject blurry, dark, cropped, or cluttered photos
+  - Prevents wasted credits
+- **3D Model Generation**:
+  - Formats: `.STL`, `.OBJ`, `.GLB`
+  - Auto mesh cleaning & smoothing
+  - Hole filling and reconstruction
+- **Styles**:
+  - Realistic
+  - Anime
+  - LEGO
+  - Fortnite-style low-poly
+- **Extras**:
+  - Base stand generator (round or square)
+  - In-browser 3D preview
+  - User history dashboard
+  - Credit & subscription system
+  - Fallback mode with user confirmation for unsupported images
+
+---
+
+## 🎨 Example Use Cases
+
+- Personalized **collectible figurines**
+- **Pet or family keepsakes**
+- Stylized **game avatars** (Unreal / Unity)
+- Influencer or streamer figurines
+- Unique **gifts for birthdays or anniversaries**
+
+---
+
+## 💻 Getting Started
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/YourUser/PhotoToFigure-AI.git
+cd PhotoToFigure-AI
+
 
 ## Project info
 

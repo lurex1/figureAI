@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Upload, Image, User, Palette, Box, Gamepad2, ArrowRight, X } from "lucide-react";
+import { Upload, Image, User, Palette, Box, Gamepad2, ArrowRight, X, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useFigurineJob, FigurineStyle } from "@/hooks/useFigurineJob";
 
 const styles = [
   { id: "realistic", name: "Realistic", icon: User, gradient: "from-cyan-500 to-blue-500" },
@@ -19,10 +20,12 @@ export default function UploadPage() {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState<FigurineStyle | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { uploadImage, createJob, isUploading, isGenerating } = useFigurineJob();
+
+  const isProcessing = isUploading || isGenerating;
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -54,6 +57,15 @@ export default function UploadPage() {
       return;
     }
 
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -71,17 +83,16 @@ export default function UploadPage() {
   const handleGenerate = async () => {
     if (!selectedFile || !selectedStyle) return;
 
-    setIsProcessing(true);
-    toast({
-      title: "Processing your image",
-      description: "This may take a moment...",
-    });
+    // Upload image to storage
+    const imageUrl = await uploadImage(selectedFile);
+    if (!imageUrl) return;
 
-    // Simulate processing - in production this would call the AI backend
-    setTimeout(() => {
-      setIsProcessing(false);
-      navigate("/preview", { state: { style: selectedStyle, image: preview } });
-    }, 2000);
+    // Create job and trigger generation
+    const job = await createJob(imageUrl, selectedStyle);
+    if (!job) return;
+
+    // Navigate to preview with job ID
+    navigate("/preview", { state: { jobId: job.id, style: selectedStyle, image: preview } });
   };
 
   const clearSelection = () => {
@@ -162,7 +173,8 @@ export default function UploadPage() {
                 <GlassCard className="relative">
                   <button
                     onClick={clearSelection}
-                    className="absolute top-4 right-4 p-2 rounded-full bg-secondary hover:bg-destructive/20 transition-colors"
+                    disabled={isProcessing}
+                    className="absolute top-4 right-4 p-2 rounded-full bg-secondary hover:bg-destructive/20 transition-colors disabled:opacity-50"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -187,8 +199,9 @@ export default function UploadPage() {
                         {styles.map((style) => (
                           <button
                             key={style.id}
-                            onClick={() => setSelectedStyle(style.id)}
-                            className={`p-4 rounded-xl border transition-all duration-200 text-left ${
+                            onClick={() => setSelectedStyle(style.id as FigurineStyle)}
+                            disabled={isProcessing}
+                            className={`p-4 rounded-xl border transition-all duration-200 text-left disabled:opacity-50 ${
                               selectedStyle === style.id
                                 ? "border-primary bg-primary/10"
                                 : "border-border hover:border-primary/50"
@@ -212,7 +225,10 @@ export default function UploadPage() {
                         onClick={handleGenerate}
                       >
                         {isProcessing ? (
-                          "Processing..."
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            {isUploading ? "Uploading..." : "Processing..."}
+                          </>
                         ) : (
                           <>
                             Generate 3D Model

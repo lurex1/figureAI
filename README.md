@@ -1,5 +1,5 @@
 # PhotoToFigure AI
-![FigureAI Project](code/Gemini_Generated_Image_5yqa7z5yqa7z5yqa.png)
+[![FigureAI Project](code/Gemini_Generated_Image_5yqa7z5yqa7z5yqa.png)](https://github.com/lurex1/figureAI/blob/main/Gemini_Generated_Image_5yqa7z5yqa7z5yqa.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

@@ -57,7 +57,7 @@ cd PhotoToFigure-AI
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**URL**: https://lovable.dev/projects/0bb322ef-8949-4b1a-92f7-148616c9ec7e
 
 ## How can I edit this code?
 

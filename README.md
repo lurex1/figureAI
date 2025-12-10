@@ -1,4 +1,5 @@
 # PhotoToFigure AI
+![FigureAI Project](code/Gemini_Generated_Image_5yqa7z5yqa7z5yqa.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -58,7 +59,7 @@ cd PhotoToFigure-AI
 ## Project info
 
 **URL**: https://lovable.dev/projects/0bb322ef-8949-4b1a-92f7-148616c9ec7e
-<img width="1265" height="791" alt="image" src="https://github.com/user-attachments/assets/641eea55-1457-4347-be67-ca5997b7e20f" />
+
 
 ## How can I edit this code?
 

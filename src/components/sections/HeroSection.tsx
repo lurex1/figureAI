@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
-import { Upload, Sparkles, Download, Box } from "lucide-react";
+import { Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ModelViewer } from "@/components/3d/ModelViewer";
 import { Link } from "react-router-dom";
+import heroWorkflow from "@/assets/hero-workflow.png";
 
 export function HeroSection() {
   return (
@@ -75,39 +75,21 @@ export function HeroSection() {
             </motion.div>
           </motion.div>
           
-          {/* Right - 3D Preview */}
+          {/* Right - Workflow Image */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
-            className="relative h-[400px] lg:h-[500px]"
+            className="relative"
           >
-            <div className="absolute inset-0 rounded-3xl glass-card overflow-hidden">
-              <ModelViewer className="w-full h-full" />
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+              <img 
+                src={heroWorkflow} 
+                alt="Workflow: Photo to 3D Model to Code to 3D Print" 
+                className="w-full h-auto"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent pointer-events-none" />
             </div>
-            
-            {/* Floating badges */}
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-              className="absolute -top-4 -right-4 px-4 py-2 rounded-xl bg-card border border-border shadow-lg"
-            >
-              <div className="flex items-center gap-2">
-                <Box className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">STL Ready</span>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", delay: 1 }}
-              className="absolute -bottom-4 -left-4 px-4 py-2 rounded-xl bg-card border border-border shadow-lg"
-            >
-              <div className="flex items-center gap-2">
-                <Download className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium">Instant Download</span>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { WorkflowDiagram } from "./WorkflowDiagram";
-import { FloatingSquares } from "@/components/ui/FloatingSquares";
+import { Floating3DShapes } from "@/components/ui/Floating3DShapes";
 
 export function HeroSection() {
   return (
@@ -13,8 +13,8 @@ export function HeroSection() {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-pulse-glow" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/20 rounded-full blur-[100px]" />
       
-      {/* Floating decorative squares */}
-      <FloatingSquares />
+      {/* Floating 3D shapes */}
+      <Floating3DShapes />
       <div className="container relative z-10 px-4 py-20">
         <div className="flex flex-col gap-16 items-center">
           {/* Top content */}

@@ -86,18 +86,12 @@ export function Floating3DShapes() {
         <pointLight position={[10, 10, 10]} intensity={0.8} />
         
         {/* Left side shapes */}
-        <RotatingCube position={[-4.5, 2, 0]} size={0.7} speed={0.6} />
-        <RotatingSphere position={[-3.8, -1.5, 1]} size={0.5} speed={0.8} />
-        <RotatingCone position={[-4.2, 0.5, -1]} size={0.6} speed={0.5} />
+        <RotatingCube position={[-4.5, 1.5, 0]} size={0.8} speed={0.6} />
+        <RotatingSphere position={[-4, -1.5, 0.5]} size={0.6} speed={0.7} />
         
         {/* Right side shapes */}
-        <RotatingCube position={[4.5, -1, 0.5]} size={0.6} speed={0.7} />
-        <RotatingSphere position={[4, 2.2, -0.5]} size={0.55} speed={0.5} />
-        <RotatingTorus position={[3.8, 0, 1]} size={0.45} speed={0.6} />
-        
-        {/* Extra scattered shapes */}
-        <RotatingCone position={[3.5, -2.5, 0]} size={0.5} speed={0.65} />
-        <RotatingTorus position={[-3.5, -2.8, 0.5]} size={0.4} speed={0.55} />
+        <RotatingCone position={[4.5, 1, 0]} size={0.7} speed={0.5} />
+        <RotatingTorus position={[4, -1.8, 0.5]} size={0.55} speed={0.6} />
       </Canvas>
     </div>
   );

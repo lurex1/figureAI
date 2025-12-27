@@ -6,31 +6,35 @@ import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Link } from "react-router-dom";
 
-// Mock data for demonstration
+import styleRealistic from "@/assets/style-realistic.png";
+import styleAnime from "@/assets/style-anime.png";
+import styleLego from "@/assets/style-lego.png";
+
+// Mock data for demonstration - te dane będą pobierane z bazy po generacji
 const mockModels = [
   {
     id: "1",
-    name: "Portrait Model",
+    name: "Moja figurka",
     style: "Realistic",
     createdAt: "2024-01-15",
     status: "completed",
-    thumbnail: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop",
+    thumbnail: styleRealistic,
   },
   {
     id: "2",
-    name: "Character Figure",
+    name: "Postać anime",
     style: "Anime",
     createdAt: "2024-01-14",
     status: "completed",
-    thumbnail: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop",
+    thumbnail: styleAnime,
   },
   {
     id: "3",
-    name: "Pet Figurine",
+    name: "LEGO figurka",
     style: "LEGO",
     createdAt: "2024-01-13",
     status: "processing",
-    thumbnail: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200&h=200&fit=crop",
+    thumbnail: styleLego,
   },
 ];
 

@@ -1,35 +1,35 @@
 import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui/glass-card";
-import { User, Palette, Box, Gamepad2 } from "lucide-react";
+
+import styleRealistic from "@/assets/style-realistic.png";
+import styleAnime from "@/assets/style-anime.png";
+import styleLego from "@/assets/style-lego.png";
+import styleFortnite from "@/assets/style-fortnite.png";
 
 const styles = [
   {
     id: "realistic",
     name: "Realistic",
-    description: "Highly detailed, lifelike 3D model with accurate proportions",
-    icon: User,
-    gradient: "from-cyan-500 to-blue-500",
+    description: "Realistyczny, szczegółowy model 3D z dokładnymi proporcjami",
+    image: styleRealistic,
   },
   {
     id: "anime",
     name: "Anime",
-    description: "Stylized anime aesthetics with expressive features",
-    icon: Palette,
-    gradient: "from-pink-500 to-purple-500",
+    description: "Stylizacja anime z ekspresyjnymi cechami i dużymi oczami",
+    image: styleAnime,
   },
   {
     id: "lego",
     name: "LEGO",
-    description: "Block-style design inspired by classic brick figures",
-    icon: Box,
-    gradient: "from-yellow-500 to-orange-500",
+    description: "Klocki w stylu klasycznych figurek LEGO",
+    image: styleLego,
   },
   {
     id: "fortnite",
     name: "Fortnite",
-    description: "Low-poly stylized look with vibrant game aesthetics",
-    icon: Gamepad2,
-    gradient: "from-green-500 to-teal-500",
+    description: "Stylizacja low-poly z gry Fortnite",
+    image: styleFortnite,
   },
 ];
 
@@ -63,12 +63,18 @@ export function StylesSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <GlassCard className="h-full hover:scale-105 transition-transform duration-300 cursor-pointer group">
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${style.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <style.icon className="w-7 h-7 text-foreground" />
+              <GlassCard className="h-full hover:scale-105 transition-transform duration-300 cursor-pointer group p-0 overflow-hidden">
+                <div className="aspect-square overflow-hidden bg-secondary">
+                  <img 
+                    src={style.image} 
+                    alt={style.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
                 </div>
-                <h3 className="font-mono text-xl font-semibold mb-2">{style.name}</h3>
-                <p className="text-sm text-muted-foreground">{style.description}</p>
+                <div className="p-4">
+                  <h3 className="font-mono text-xl font-semibold mb-2">{style.name}</h3>
+                  <p className="text-sm text-muted-foreground">{style.description}</p>
+                </div>
               </GlassCard>
             </motion.div>
           ))}

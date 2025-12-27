@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { WorkflowDiagram } from "./WorkflowDiagram";
 import { Floating3DShapes } from "@/components/ui/Floating3DShapes";
 
 export function HeroSection() {
@@ -57,16 +56,6 @@ export function HeroSection() {
                 </Link>
               </Button>
             </div>
-          </motion.div>
-          
-          {/* Workflow Diagram */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
-            className="w-full"
-          >
-            <WorkflowDiagram />
           </motion.div>
           
           {/* Stats */}

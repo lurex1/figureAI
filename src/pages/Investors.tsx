@@ -89,7 +89,7 @@ export default function Investors() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="hero" size="xl" asChild>
-                <a href="mailto:kontakt@figureai.pl">
+                <a href="mailto:lurex@tlen.pl">
                   <Mail className="w-5 h-5" />
                   Skontaktuj się
                 </a>
@@ -295,10 +295,10 @@ export default function Investors() {
                 do dalszego rozwoju platformy. Skontaktuj się z nami.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button variant="hero" size="xl" asChild>
-                  <a href="mailto:kontakt@figureai.pl">
+              <Button variant="hero" size="xl" asChild>
+                  <a href="mailto:lurex@tlen.pl">
                     <Mail className="w-5 h-5" />
-                    kontakt@figureai.pl
+                    lurex@tlen.pl
                   </a>
                 </Button>
               </div>

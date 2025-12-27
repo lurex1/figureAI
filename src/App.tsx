@@ -11,6 +11,7 @@ import Preview from "./pages/Preview";
 import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
+import Investors from "./pages/Investors";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/preview/:jobId" element={<Preview />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/investors" element={<Investors />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

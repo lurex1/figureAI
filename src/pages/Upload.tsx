@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Upload, Image, User, Palette, Box, Gamepad2, ArrowRight, X, Loader2 } from "lucide-react";
+import { Upload, Image, ArrowRight, X, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,16 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useFigurineJob, FigurineStyle } from "@/hooks/useFigurineJob";
 
+import styleRealistic from "@/assets/style-realistic.png";
+import styleAnime from "@/assets/style-anime.png";
+import styleLego from "@/assets/style-lego.png";
+import styleFortnite from "@/assets/style-fortnite.png";
+
 const styles = [
-  { id: "realistic", name: "Realistic", icon: User, gradient: "from-cyan-500 to-blue-500" },
-  { id: "anime", name: "Anime", icon: Palette, gradient: "from-pink-500 to-purple-500" },
-  { id: "lego", name: "LEGO", icon: Box, gradient: "from-yellow-500 to-orange-500" },
-  { id: "fortnite", name: "Fortnite", icon: Gamepad2, gradient: "from-green-500 to-teal-500" },
+  { id: "realistic", name: "Realistic", image: styleRealistic, description: "Realistyczny, szczegółowy model 3D" },
+  { id: "anime", name: "Anime", image: styleAnime, description: "Stylizacja anime z dużymi oczami" },
+  { id: "lego", name: "LEGO", image: styleLego, description: "Klocki w stylu LEGO" },
+  { id: "fortnite", name: "Fortnite", image: styleFortnite, description: "Stylizacja z gry Fortnite" },
 ];
 
 export default function UploadPage() {
@@ -201,18 +206,21 @@ export default function UploadPage() {
                             key={style.id}
                             onClick={() => setSelectedStyle(style.id as FigurineStyle)}
                             disabled={isProcessing}
-                            className={`p-4 rounded-xl border transition-all duration-200 text-left disabled:opacity-50 ${
+                            className={`p-3 rounded-xl border transition-all duration-200 text-left disabled:opacity-50 overflow-hidden ${
                               selectedStyle === style.id
-                                ? "border-primary bg-primary/10"
+                                ? "border-primary bg-primary/10 ring-2 ring-primary"
                                 : "border-border hover:border-primary/50"
                             }`}
                           >
-                            <div
-                              className={`w-10 h-10 rounded-lg bg-gradient-to-br ${style.gradient} flex items-center justify-center mb-3`}
-                            >
-                              <style.icon className="w-5 h-5 text-foreground" />
+                            <div className="aspect-square rounded-lg overflow-hidden mb-2 bg-secondary">
+                              <img 
+                                src={style.image} 
+                                alt={style.name}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
-                            <span className="font-medium">{style.name}</span>
+                            <span className="font-medium text-sm">{style.name}</span>
+                            <p className="text-xs text-muted-foreground mt-0.5">{style.description}</p>
                           </button>
                         ))}
                       </div>

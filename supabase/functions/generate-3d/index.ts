@@ -14,6 +14,9 @@ const STYLE_MAP: Record<string, string> = {
   fortnite: "cartoon",
 };
 
+// Credits cost per generation
+const CREDITS_COST = 5;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -53,6 +56,44 @@ serve(async (req) => {
       throw new Error("Job must be approved before generation");
     }
 
+    // Check and deduct credits
+    const userId = job.user_id;
+    if (!userId) {
+      throw new Error("Job must have a user_id");
+    }
+
+    console.log(`[generate-3d] Checking credits for user ${userId}`);
+
+    // Get current credits balance
+    const { data: subscription, error: subError } = await supabase
+      .from("subscriptions")
+      .select("credits_balance")
+      .eq("user_id", userId)
+      .single();
+
+    if (subError || !subscription) {
+      console.error("[generate-3d] Subscription not found:", subError);
+      throw new Error("User subscription not found");
+    }
+
+    if (subscription.credits_balance < CREDITS_COST) {
+      console.error(`[generate-3d] Insufficient credits: ${subscription.credits_balance} < ${CREDITS_COST}`);
+      throw new Error(`Niewystarczająca liczba kredytów. Potrzebujesz ${CREDITS_COST} kredytów, masz ${subscription.credits_balance}.`);
+    }
+
+    // Deduct credits using the database function
+    const { data: deductResult, error: deductError } = await supabase.rpc('deduct_credits', {
+      p_user_id: userId,
+      p_amount: CREDITS_COST
+    });
+
+    if (deductError || !deductResult) {
+      console.error("[generate-3d] Failed to deduct credits:", deductError);
+      throw new Error("Failed to deduct credits");
+    }
+
+    console.log(`[generate-3d] Deducted ${CREDITS_COST} credits from user ${userId}`);
+
     // Update job status to processing
     const { error: updateError } = await supabase
       .from("figurine_jobs")
@@ -60,6 +101,7 @@ serve(async (req) => {
         status: "processing",
         validation_status: "processing",
         credits_consumed: true,
+        credits_cost: CREDITS_COST,
       })
       .eq("id", jobId);
 
@@ -181,13 +223,29 @@ serve(async (req) => {
   } catch (error) {
     console.error("[generate-3d] Error:", error);
 
-    // If error occurs, try to mark job as failed
+    // If error occurs, try to mark job as failed and refund credits
     try {
       const { jobId } = await req.clone().json();
       if (jobId) {
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // Get job to find user_id for refund
+        const { data: failedJob } = await supabase
+          .from("figurine_jobs")
+          .select("user_id, credits_consumed")
+          .eq("id", jobId)
+          .single();
+
+        // Refund credits if they were consumed
+        if (failedJob?.user_id && failedJob?.credits_consumed) {
+          console.log(`[generate-3d] Refunding ${CREDITS_COST} credits to user ${failedJob.user_id}`);
+          await supabase.rpc('add_credits', {
+            p_user_id: failedJob.user_id,
+            p_amount: CREDITS_COST
+          });
+        }
 
         await supabase
           .from("figurine_jobs")

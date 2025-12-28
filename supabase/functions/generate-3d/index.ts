@@ -6,12 +6,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Map internal model types to Meshy style presets
-const STYLE_MAP: Record<string, string> = {
-  realistic: "realistic",
-  anime: "cartoon",
-  lego: "voxel",
-  fortnite: "cartoon",
+// Map internal styles to texture prompts for Meshy
+const STYLE_TEXTURE_PROMPTS: Record<string, string> = {
+  realistic: "Highly detailed realistic figurine with lifelike textures, realistic skin tones, fabric details, and natural lighting. Professional collectible figure quality.",
+  anime: "Anime-style figurine with cel-shaded textures, vibrant colors, smooth gradients, large expressive eyes. Japanese anime aesthetic like Nendoroid or Figma figures.",
+  lego: "LEGO minifigure style with blocky voxel appearance, solid bright colors, plastic toy texture, simplified geometric shapes. Classic LEGO brick aesthetic.",
+  fortnite: "Fortnite game style figurine with stylized cartoon textures, vibrant saturated colors, exaggerated proportions, video game character aesthetic.",
+};
+
+// Get style-specific settings
+const getStyleSettings = (style: string) => {
+  const settings: Record<string, { aiModel: string; topology: string; polycount: number }> = {
+    realistic: { aiModel: "meshy-4", topology: "quad", polycount: 50000 },
+    anime: { aiModel: "meshy-4", topology: "quad", polycount: 30000 },
+    lego: { aiModel: "meshy-4", topology: "quad", polycount: 10000 },
+    fortnite: { aiModel: "meshy-4", topology: "quad", polycount: 30000 },
+  };
+  return settings[style] || settings.realistic;
 };
 
 // Credits cost per generation
@@ -111,9 +122,13 @@ serve(async (req) => {
     }
 
     // Create Meshy.ai Image-to-3D task
-    console.log("[generate-3d] Creating Meshy.ai task...");
+    // Get style-specific settings
+    const styleSettings = getStyleSettings(style);
+    const texturePrompt = STYLE_TEXTURE_PROMPTS[style] || STYLE_TEXTURE_PROMPTS.realistic;
     
-    const meshyStyle = STYLE_MAP[style] || "realistic";
+    console.log(`[generate-3d] Using style: ${style}`);
+    console.log(`[generate-3d] AI Model: ${styleSettings.aiModel}, Topology: ${styleSettings.topology}, Polycount: ${styleSettings.polycount}`);
+    console.log(`[generate-3d] Texture prompt: ${texturePrompt}`);
     
     const createTaskResponse = await fetch("https://api.meshy.ai/v2/image-to-3d", {
       method: "POST",
@@ -124,9 +139,11 @@ serve(async (req) => {
       body: JSON.stringify({
         image_url: imageUrl,
         enable_pbr: true,
-        ai_model: "meshy-4",
-        topology: "quad",
-        target_polycount: 30000,
+        ai_model: styleSettings.aiModel,
+        topology: styleSettings.topology,
+        target_polycount: styleSettings.polycount,
+        texture_prompt: texturePrompt,
+        should_texture: true,
       }),
     });
 

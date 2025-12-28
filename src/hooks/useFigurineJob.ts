@@ -75,7 +75,7 @@ export function useFigurineJob() {
         return null;
       }
 
-      // Create job in database
+      // Create job in database with user_confirmed: true (direct generation)
       const { data: job, error: insertError } = await supabase
         .from("figurine_jobs")
         .insert({
@@ -83,6 +83,8 @@ export function useFigurineJob() {
           style: style,
           status: "pending",
           user_id: user.id,
+          user_confirmed: true,
+          validation_status: "approved",
         })
         .select()
         .single();

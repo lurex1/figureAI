@@ -6,12 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Pipeline selection based on model type
-const PIPELINE_INFO: Record<string, { name: string; description: string }> = {
-  HEAD_MODEL: { name: "Face NeRF / Photogrammetry", description: "Specialized for human head reconstruction" },
-  BUILDING_MODEL: { name: "Depth + Photogrammetry", description: "Optimized for architectural structures" },
-  ANIMAL_MODEL: { name: "Mesh Reconstruction + Pose Normalization", description: "Full-body animal modeling" },
-  FALLBACK_MODEL: { name: "Object-centric Photogrammetry + Mesh Cleanup", description: "General object reconstruction" },
+// Map internal model types to Meshy style presets
+const STYLE_MAP: Record<string, string> = {
+  realistic: "realistic",
+  anime: "cartoon",
+  lego: "voxel",
+  fortnite: "cartoon",
 };
 
 serve(async (req) => {
@@ -28,7 +28,12 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const meshyApiKey = Deno.env.get("MESHY_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    if (!meshyApiKey) {
+      throw new Error("MESHY_API_KEY is not configured");
+    }
 
     // Verify job exists and is approved
     const { data: job, error: jobError } = await supabase
@@ -42,13 +47,13 @@ serve(async (req) => {
       throw new Error("Job not found");
     }
 
-    // Verify the job is approved (credits should only be consumed for approved jobs)
+    // Verify the job is approved
     if (job.validation_status !== "approved" && !job.user_confirmed) {
       console.error("[generate-3d] Job not approved for generation");
       throw new Error("Job must be approved before generation");
     }
 
-    // Update job status to processing and consume credits
+    // Update job status to processing
     const { error: updateError } = await supabase
       .from("figurine_jobs")
       .update({ 
@@ -63,40 +68,92 @@ serve(async (req) => {
       throw new Error("Failed to update job status");
     }
 
-    const pipeline = PIPELINE_INFO[modelType] || PIPELINE_INFO.FALLBACK_MODEL;
-    console.log(`[generate-3d] Using pipeline: ${pipeline.name}`);
-
-    // =========================================================
-    // TODO: Integrate with Image-to-3D API here
-    // 
-    // Based on modelType, select appropriate pipeline:
-    // - HEAD_MODEL: Face NeRF / photogrammetry
-    // - BUILDING_MODEL: Depth + photogrammetry
-    // - ANIMAL_MODEL: Mesh reconstruction + pose normalization
-    // - FALLBACK_MODEL: Object-centric photogrammetry + mesh cleanup
-    //
-    // API Options: Meshy.ai, Tripo3D, Replicate (TripoSR), etc.
-    // 
-    // Expected outputs:
-    // - 3D model (GLB + OBJ)
-    // - PNG preview render
-    // - Quality report
-    // - Notes on reconstruction issues
-    // =========================================================
-
-    console.log("[generate-3d] TODO: Implement actual 3D API integration");
+    // Create Meshy.ai Image-to-3D task
+    console.log("[generate-3d] Creating Meshy.ai task...");
     
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const meshyStyle = STYLE_MAP[style] || "realistic";
+    
+    const createTaskResponse = await fetch("https://api.meshy.ai/v2/image-to-3d", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${meshyApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_url: imageUrl,
+        enable_pbr: true,
+        ai_model: "meshy-4",
+        topology: "quad",
+        target_polycount: 30000,
+      }),
+    });
 
-    // Update job as completed (placeholder)
+    if (!createTaskResponse.ok) {
+      const errorText = await createTaskResponse.text();
+      console.error("[generate-3d] Meshy API error:", errorText);
+      throw new Error(`Meshy API error: ${createTaskResponse.status} - ${errorText}`);
+    }
+
+    const createTaskData = await createTaskResponse.json();
+    const meshyTaskId = createTaskData.result;
+    
+    console.log(`[generate-3d] Meshy task created: ${meshyTaskId}`);
+
+    // Poll for task completion
+    let taskComplete = false;
+    let taskResult = null;
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes max (5s intervals)
+
+    while (!taskComplete && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      
+      const statusResponse = await fetch(`https://api.meshy.ai/v2/image-to-3d/${meshyTaskId}`, {
+        headers: {
+          "Authorization": `Bearer ${meshyApiKey}`,
+        },
+      });
+
+      if (!statusResponse.ok) {
+        console.error("[generate-3d] Failed to check task status");
+        attempts++;
+        continue;
+      }
+
+      taskResult = await statusResponse.json();
+      console.log(`[generate-3d] Task status: ${taskResult.status} (attempt ${attempts + 1})`);
+
+      if (taskResult.status === "SUCCEEDED") {
+        taskComplete = true;
+      } else if (taskResult.status === "FAILED" || taskResult.status === "EXPIRED") {
+        throw new Error(`Meshy task failed: ${taskResult.task_error?.message || "Unknown error"}`);
+      }
+
+      attempts++;
+    }
+
+    if (!taskComplete) {
+      throw new Error("Meshy task timed out");
+    }
+
+    console.log("[generate-3d] Meshy task completed successfully");
+    console.log("[generate-3d] Model URLs:", taskResult.model_urls);
+
+    // Update job with results
     const { error: completeError } = await supabase
       .from("figurine_jobs")
       .update({ 
         status: "completed",
         validation_status: "completed",
-        // model_url will be set when real API is integrated
-        // preview_url will be set when real API is integrated
+        model_url: taskResult.model_urls?.glb || taskResult.model_urls?.obj || null,
+        preview_url: taskResult.thumbnail_url || null,
+        quality_report: {
+          meshy_task_id: meshyTaskId,
+          model_urls: taskResult.model_urls,
+          texture_urls: taskResult.texture_urls,
+          created_at: taskResult.created_at,
+          finished_at: taskResult.finished_at,
+        },
       })
       .eq("id", jobId);
 
@@ -111,8 +168,9 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         jobId,
-        pipeline: pipeline.name,
-        message: `Job processed with ${pipeline.name}. TODO: Integrate 3D API.`
+        modelUrl: taskResult.model_urls?.glb,
+        previewUrl: taskResult.thumbnail_url,
+        message: "3D model generated successfully with Meshy.ai"
       }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -137,7 +195,6 @@ serve(async (req) => {
             status: "failed",
             validation_status: "failed",
             error_message: error instanceof Error ? error.message : "Unknown error",
-            // Don't consume credits on failure
             credits_consumed: false,
           })
           .eq("id", jobId);

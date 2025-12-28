@@ -1,53 +1,46 @@
 import { motion } from "framer-motion";
-import { Check, Zap } from "lucide-react";
+import { Check, Zap, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
+import { SUBSCRIPTION_TIERS } from "@/lib/subscription-tiers";
 
 const plans = [
   {
-    name: "Free Preview",
+    name: SUBSCRIPTION_TIERS.free.name,
     price: "$0",
-    description: "Try before you buy",
-    features: [
-      "1 free preview generation",
-      "Low-res PNG preview",
-      "Watermarked output",
-      "Basic style options",
-    ],
+    period: "",
+    description: "Start creating for free",
+    features: SUBSCRIPTION_TIERS.free.features,
     cta: "Get Started",
     popular: false,
+    icon: null,
   },
   {
-    name: "Single Model",
-    price: "$9",
-    description: "One-time purchase",
-    features: [
-      "1 high-quality 3D model",
-      "STL + OBJ download",
-      "All 4 style options",
-      "Base plate included",
-      "Print-ready files",
-    ],
-    cta: "Buy Now",
+    name: SUBSCRIPTION_TIERS.pro.name,
+    price: `$${SUBSCRIPTION_TIERS.pro.price}`,
+    period: "/mo",
+    description: "Best for single models",
+    features: SUBSCRIPTION_TIERS.pro.features,
+    cta: "Get Pro",
     popular: true,
+    icon: Zap,
   },
   {
-    name: "Creator Pack",
-    price: "$29",
+    name: SUBSCRIPTION_TIERS.creator.name,
+    price: `$${SUBSCRIPTION_TIERS.creator.price}`,
+    period: "/mo",
     description: "Best for enthusiasts",
-    features: [
-      "5 high-quality 3D models",
-      "Priority processing",
-      "Commercial license",
-      "Custom base options",
-      "Email support",
-    ],
-    cta: "Get Pack",
+    features: SUBSCRIPTION_TIERS.creator.features,
+    cta: "Get Creator",
     popular: false,
+    icon: Sparkles,
   },
 ];
 
 export function PricingSection() {
+  const navigate = useNavigate();
+
   return (
     <section className="py-24 relative">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
@@ -64,7 +57,7 @@ export function PricingSection() {
             Simple <span className="gradient-text">Pricing</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            No subscriptions. Pay only for what you create.
+            Monthly subscriptions with credit-based generation.
           </p>
         </motion.div>
         
@@ -82,24 +75,28 @@ export function PricingSection() {
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
                   <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
                     <Zap className="w-3 h-3" />
-                    Most Popular
+                    Recommended
                   </div>
                 </div>
               )}
               
               <GlassCard 
                 gradient={plan.popular}
-                className={`h-full ${plan.popular ? 'scale-105 border-primary/30' : ''}`}
+                className={`h-full flex flex-col ${plan.popular ? 'scale-105 border-primary/30' : ''}`}
               >
                 <div className="text-center mb-6">
-                  <h3 className="font-mono text-xl font-semibold mb-2">{plan.name}</h3>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    {plan.icon && <plan.icon className="w-5 h-5 text-primary" />}
+                    <h3 className="font-mono text-xl font-semibold">{plan.name}</h3>
+                  </div>
                   <div className="mb-2">
                     <span className="text-4xl font-mono font-bold">{plan.price}</span>
+                    <span className="text-muted-foreground">{plan.period}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">{plan.description}</p>
                 </div>
                 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-3 mb-8 flex-1">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-3 text-sm">
                       <Check className="w-4 h-4 text-primary flex-shrink-0" />
@@ -112,6 +109,7 @@ export function PricingSection() {
                   variant={plan.popular ? "hero" : "outline"} 
                   className="w-full"
                   size="lg"
+                  onClick={() => navigate("/pricing")}
                 >
                   {plan.cta}
                 </Button>

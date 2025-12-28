@@ -64,6 +64,17 @@ export function useFigurineJob() {
   const createJob = async (imageUrl: string, style: FigurineStyle): Promise<FigurineJob | null> => {
     setIsGenerating(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to create a job",
+          variant: "destructive",
+        });
+        return null;
+      }
+
       // Create job in database
       const { data: job, error: insertError } = await supabase
         .from("figurine_jobs")
@@ -71,6 +82,7 @@ export function useFigurineJob() {
           original_image_url: imageUrl,
           style: style,
           status: "pending",
+          user_id: user.id,
         })
         .select()
         .single();

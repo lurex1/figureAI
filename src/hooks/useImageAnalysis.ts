@@ -59,6 +59,12 @@ export function useImageAnalysis() {
 
       const imageUrl = urlData.publicUrl;
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("You must be logged in to create a job");
+      }
+
       // Create job in database
       const { data: job, error: jobError } = await supabase
         .from("figurine_jobs")
@@ -68,6 +74,7 @@ export function useImageAnalysis() {
           status: "pending",
           validation_status: "pending",
           credits_consumed: false,
+          user_id: user.id,
         })
         .select()
         .single();

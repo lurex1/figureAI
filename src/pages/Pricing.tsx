@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Check, Zap, Crown, Loader2 } from "lucide-react";
+import { Check, Zap, Crown, Loader2, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,40 +9,38 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
+import { SUBSCRIPTION_TIERS, type SubscriptionPlan } from "@/lib/subscription-tiers";
 
 const plans = [
   {
-    name: "Free",
-    price: "0 zł",
-    period: "",
-    description: "Try before you buy",
-    features: [
-      "1 free preview generation",
-      "Low-res PNG preview",
-      "Watermarked output",
-      "Basic style options",
-    ],
-    cta: "Current Plan",
-    planId: "free",
+    planId: 'free' as SubscriptionPlan,
+    name: SUBSCRIPTION_TIERS.free.name,
+    price: '$0',
+    period: '',
+    description: 'Start creating for free',
+    features: SUBSCRIPTION_TIERS.free.features,
     popular: false,
+    icon: null,
   },
   {
-    name: "Pro",
-    price: "29.99 zł",
-    period: "/month",
-    description: "Unlimited creativity",
-    features: [
-      "Unlimited 3D generations",
-      "Priority processing",
-      "All 4 style options",
-      "STL + OBJ downloads",
-      "No watermarks",
-      "Commercial license",
-      "Priority support",
-    ],
-    cta: "Upgrade to Pro",
-    planId: "pro",
+    planId: 'pro' as SubscriptionPlan,
+    name: SUBSCRIPTION_TIERS.pro.name,
+    price: `$${SUBSCRIPTION_TIERS.pro.price}`,
+    period: '/month',
+    description: 'Best for single models',
+    features: SUBSCRIPTION_TIERS.pro.features,
     popular: true,
+    icon: Zap,
+  },
+  {
+    planId: 'creator' as SubscriptionPlan,
+    name: SUBSCRIPTION_TIERS.creator.name,
+    price: `$${SUBSCRIPTION_TIERS.creator.price}`,
+    period: '/month',
+    description: 'Best for enthusiasts',
+    features: SUBSCRIPTION_TIERS.creator.features,
+    popular: false,
+    icon: Sparkles,
   },
 ];
 
@@ -50,7 +48,7 @@ export default function PricingPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { subscription, isLoading, startCheckout, openCustomerPortal, refreshSubscription, isPro } = useSubscription();
+  const { subscription, isLoading, startCheckout, openCustomerPortal, refreshSubscription, isPaid } = useSubscription();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -58,7 +56,7 @@ export default function PricingPage() {
     if (checkout === "success") {
       toast({
         title: "Payment Successful!",
-        description: "Welcome to FigureAI Pro! Your subscription is now active.",
+        description: "Your subscription is now active.",
       });
       refreshSubscription();
     } else if (checkout === "canceled") {
@@ -70,28 +68,35 @@ export default function PricingPage() {
     }
   }, [searchParams]);
 
-  const handlePlanAction = (planId: string) => {
+  const handlePlanAction = (planId: SubscriptionPlan) => {
     if (!user) {
       navigate("/auth");
       return;
     }
 
-    if (planId === "pro" && !isPro) {
-      startCheckout();
-    } else if (isPro) {
+    if (planId === 'free') {
+      if (isPaid) {
+        openCustomerPortal();
+      }
+      return;
+    }
+
+    if (isPaid) {
       openCustomerPortal();
+    } else {
+      startCheckout(planId);
     }
   };
 
-  const getButtonText = (planId: string, defaultCta: string) => {
+  const getButtonText = (planId: SubscriptionPlan) => {
     if (!user) return "Sign In to Upgrade";
-    if (planId === "free" && !isPro) return "Current Plan";
-    if (planId === "free" && isPro) return "Downgrade";
-    if (planId === "pro" && isPro) return "Manage Subscription";
-    return defaultCta;
+    if (planId === subscription.plan) return "Current Plan";
+    if (planId === 'free' && isPaid) return "Downgrade";
+    if (isPaid) return "Manage Subscription";
+    return `Get ${plans.find(p => p.planId === planId)?.name}`;
   };
 
-  const isCurrentPlan = (planId: string) => {
+  const isCurrentPlan = (planId: SubscriptionPlan) => {
     if (!user) return false;
     return planId === subscription.plan;
   };
@@ -108,25 +113,27 @@ export default function PricingPage() {
             className="text-center mb-16"
           >
             <h1 className="font-mono text-3xl md:text-4xl font-bold mb-4">
-              Simple <span className="gradient-text">Subscription</span>
+              Choose Your <span className="gradient-text">Plan</span>
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Unlock unlimited 3D figurine generation with Pro.
+              From free previews to unlimited commercial use. Pick the plan that fits your needs.
             </p>
 
-            {isPro && (
+            {isPaid && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30"
               >
                 <Crown className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">You're a Pro member!</span>
+                <span className="text-sm font-medium text-primary">
+                  You're on {SUBSCRIPTION_TIERS[subscription.plan].name}!
+                </span>
               </motion.div>
             )}
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.name}
@@ -157,7 +164,10 @@ export default function PricingPage() {
                   className={`h-full flex flex-col ${plan.popular ? "border-primary/30" : ""} ${isCurrentPlan(plan.planId) ? "ring-2 ring-primary/50" : ""}`}
                 >
                   <div className="text-center mb-6">
-                    <h3 className="font-mono text-xl font-semibold mb-2">{plan.name}</h3>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      {plan.icon && <plan.icon className="w-5 h-5 text-primary" />}
+                      <h3 className="font-mono text-xl font-semibold">{plan.name}</h3>
+                    </div>
                     <div className="mb-2">
                       <span className="text-4xl font-mono font-bold">{plan.price}</span>
                       <span className="text-muted-foreground">{plan.period}</span>
@@ -178,7 +188,7 @@ export default function PricingPage() {
                     variant={plan.popular ? "hero" : "outline"}
                     className="w-full"
                     onClick={() => handlePlanAction(plan.planId)}
-                    disabled={isLoading || (isCurrentPlan(plan.planId) && plan.planId === "free")}
+                    disabled={isLoading || isCurrentPlan(plan.planId)}
                   >
                     {isLoading ? (
                       <>
@@ -186,7 +196,7 @@ export default function PricingPage() {
                         Processing...
                       </>
                     ) : (
-                      getButtonText(plan.planId, plan.cta)
+                      getButtonText(plan.planId)
                     )}
                   </Button>
                 </GlassCard>
@@ -207,13 +217,17 @@ export default function PricingPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Plan:</span>
-                    <span className="font-medium capitalize">{subscription.plan}</span>
+                    <span className="font-medium">{SUBSCRIPTION_TIERS[subscription.plan].name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Status:</span>
                     <span className={`font-medium capitalize ${subscription.status === 'active' ? 'text-primary' : 'text-muted-foreground'}`}>
                       {subscription.status}
                     </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Credits:</span>
+                    <span className="font-medium">{subscription.creditsBalance}</span>
                   </div>
                   {subscription.subscriptionEnd && (
                     <div className="flex justify-between">
@@ -283,6 +297,10 @@ export default function PricingPage() {
             <div className="space-y-4">
               {[
                 {
+                  q: "What are credits?",
+                  a: "Credits are used to generate 3D models. Each generation costs 5 credits. Free plan includes 15 credits, Pro includes 200/month, and Creator Pack includes 800/month.",
+                },
+                {
                   q: "How do I cancel my subscription?",
                   a: "You can cancel anytime from the Manage Subscription button. You'll retain access until the end of your billing period.",
                 },
@@ -291,12 +309,8 @@ export default function PricingPage() {
                   a: "We accept all major credit cards through Stripe's secure payment system.",
                 },
                 {
-                  q: "Can I get a refund?",
-                  a: "Yes, contact our support within 7 days of purchase for a full refund.",
-                },
-                {
-                  q: "Do I keep my generated models if I cancel?",
-                  a: "Yes! All models you've generated remain accessible in your dashboard forever.",
+                  q: "Do credits roll over?",
+                  a: "Credits reset at the start of each billing period. Unused credits do not roll over.",
                 },
               ].map((faq, i) => (
                 <GlassCard key={i} className="p-5">

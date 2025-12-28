@@ -12,6 +12,12 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// Price IDs for each plan
+const PRICE_IDS: Record<string, string> = {
+  'pro': 'price_1SjEkV72P9RKFpwCL1IT8GKM',
+  'creator': 'price_1SjEki72P9RKFpwC9qKVF2cb',
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -35,6 +41,20 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Get requested plan from body (default to 'pro')
+    let requestedPlan = 'pro';
+    try {
+      const body = await req.json();
+      if (body.plan && PRICE_IDS[body.plan]) {
+        requestedPlan = body.plan;
+      }
+    } catch {
+      // No body or invalid JSON, use default
+    }
+
+    const priceId = PRICE_IDS[requestedPlan];
+    logStep("Selected plan", { plan: requestedPlan, priceId });
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -55,7 +75,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1ScVgG72P9RKFpwC2mLXmrHz", // FigureAI Pro monthly
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -64,6 +84,7 @@ serve(async (req) => {
       cancel_url: `${origin}/pricing?checkout=canceled`,
       metadata: {
         user_id: user.id,
+        plan: requestedPlan,
       },
     });
 

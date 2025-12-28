@@ -130,7 +130,7 @@ serve(async (req) => {
     console.log(`[generate-3d] AI Model: ${styleSettings.aiModel}, Topology: ${styleSettings.topology}, Polycount: ${styleSettings.polycount}`);
     console.log(`[generate-3d] Texture prompt: ${texturePrompt}`);
     
-    const createTaskResponse = await fetch("https://api.meshy.ai/v2/image-to-3d", {
+    const createTaskResponse = await fetch("https://api.meshy.ai/openapi/v1/image-to-3d", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${meshyApiKey}`,
@@ -167,7 +167,7 @@ serve(async (req) => {
     while (!taskComplete && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
       
-      const statusResponse = await fetch(`https://api.meshy.ai/v2/image-to-3d/${meshyTaskId}`, {
+      const statusResponse = await fetch(`https://api.meshy.ai/openapi/v1/image-to-3d/${meshyTaskId}`, {
         headers: {
           "Authorization": `Bearer ${meshyApiKey}`,
         },

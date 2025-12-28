@@ -19,6 +19,7 @@ export type Database = {
           additional_images: string[] | null
           created_at: string
           credits_consumed: boolean | null
+          credits_cost: number | null
           detected_object: string | null
           error_message: string | null
           id: string
@@ -39,6 +40,7 @@ export type Database = {
           additional_images?: string[] | null
           created_at?: string
           credits_consumed?: boolean | null
+          credits_cost?: number | null
           detected_object?: string | null
           error_message?: string | null
           id?: string
@@ -59,6 +61,7 @@ export type Database = {
           additional_images?: string[] | null
           created_at?: string
           credits_consumed?: boolean | null
+          credits_cost?: number | null
           detected_object?: string | null
           error_message?: string | null
           id?: string
@@ -111,6 +114,7 @@ export type Database = {
         Row: {
           cancel_at_period_end: boolean | null
           created_at: string
+          credits_balance: number
           current_period_end: string | null
           id: string
           plan: string | null
@@ -123,6 +127,7 @@ export type Database = {
         Insert: {
           cancel_at_period_end?: boolean | null
           created_at?: string
+          credits_balance?: number
           current_period_end?: string | null
           id?: string
           plan?: string | null
@@ -135,6 +140,7 @@ export type Database = {
         Update: {
           cancel_at_period_end?: boolean | null
           created_at?: string
+          credits_balance?: number
           current_period_end?: string | null
           id?: string
           plan?: string | null
@@ -151,7 +157,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_credits: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: undefined
+      }
+      deduct_credits: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

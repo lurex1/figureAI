@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Box, Clock, Download, Eye, Plus, Loader2, Coins } from "lucide-react";
+import { Box, Clock, Download, Eye, Plus, Loader2, Coins, XCircle, AlertTriangle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-
+import { useToast } from "@/hooks/use-toast";
 interface FigurineJob {
   id: string;
   original_image_url: string;
@@ -16,15 +16,55 @@ interface FigurineJob {
   status: string;
   model_url: string | null;
   preview_url: string | null;
+  error_message: string | null;
   user_confirmed: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export default function DashboardPage() {
   const { user, subscription } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [jobs, setJobs] = useState<FigurineJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
+
+  const cancelJob = async (jobId: string) => {
+    setCancellingJobId(jobId);
+    try {
+      const { error } = await supabase
+        .from("figurine_jobs")
+        .update({ 
+          status: "failed", 
+          error_message: "Cancelled by user",
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", jobId);
+
+      if (error) throw error;
+
+      setJobs(prev => prev.map(job => 
+        job.id === jobId 
+          ? { ...job, status: "failed", error_message: "Cancelled by user" } 
+          : job
+      ));
+
+      toast({
+        title: "Job cancelled",
+        description: "The generation job has been cancelled.",
+      });
+    } catch (error) {
+      console.error("Failed to cancel job:", error);
+      toast({
+        title: "Failed to cancel",
+        description: "Could not cancel the job. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setCancellingJobId(null);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -83,7 +123,14 @@ export default function DashboardPage() {
   const completedJobs = jobs.filter(j => j.status === "approved" || (j.status === "completed" && j.user_confirmed));
   const pendingReviewJobs = jobs.filter(j => j.status === "completed" && !j.user_confirmed);
   const processingJobs = jobs.filter(j => j.status === "processing" || j.status === "pending");
+  const failedJobs = jobs.filter(j => j.status === "failed");
 
+  // Check for stuck jobs (processing for more than 10 minutes)
+  const stuckJobs = processingJobs.filter(job => {
+    const updatedAt = new Date(job.updated_at).getTime();
+    const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
+    return updatedAt < tenMinutesAgo;
+  });
   const lastCreatedDate = jobs.length > 0 
     ? new Date(jobs[0].created_at).toLocaleDateString() 
     : "Never";
@@ -167,6 +214,36 @@ export default function DashboardPage() {
             </motion.div>
           )}
 
+          {/* Stuck Jobs Alert */}
+          {stuckJobs.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <GlassCard className="border-destructive/50 bg-destructive/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    <div>
+                      <p className="font-medium">You have {stuckJobs.length} stuck job(s)</p>
+                      <p className="text-sm text-muted-foreground">These jobs have been processing for too long and may have failed</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => stuckJobs.forEach(job => cancelJob(job.id))}
+                    disabled={cancellingJobId !== null}
+                  >
+                    {cancellingJobId ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
+                    Cancel All
+                  </Button>
+                </div>
+              </GlassCard>
+            </motion.div>
+          )}
+
           {/* Loading state */}
           {isLoading && (
             <div className="flex items-center justify-center py-16">
@@ -202,16 +279,41 @@ export default function DashboardPage() {
 
                         {/* Hover overlay */}
                         <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
-                          <Button variant="hero" size="sm" onClick={() => handleViewJob(job)}>
-                            <Eye className="w-4 h-4" />
-                            {job.status === "completed" && !job.user_confirmed ? "Review" : "View"}
-                          </Button>
-                          {(job.status === "approved" || job.user_confirmed) && job.model_url && (
-                            <Button variant="outline" size="sm" asChild>
-                              <a href={job.model_url} download>
-                                <Download className="w-4 h-4" />
-                              </a>
+                          {job.status === "failed" ? (
+                            <Button variant="hero" size="sm" asChild>
+                              <Link to="/upload">
+                                <Plus className="w-4 h-4" />
+                                Try Again
+                              </Link>
                             </Button>
+                          ) : (job.status === "processing" || job.status === "pending") ? (
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={() => cancelJob(job.id)}
+                              disabled={cancellingJobId === job.id}
+                            >
+                              {cancellingJobId === job.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <XCircle className="w-4 h-4" />
+                              )}
+                              Cancel
+                            </Button>
+                          ) : (
+                            <>
+                              <Button variant="hero" size="sm" onClick={() => handleViewJob(job)}>
+                                <Eye className="w-4 h-4" />
+                                {job.status === "completed" && !job.user_confirmed ? "Review" : "View"}
+                              </Button>
+                              {(job.status === "approved" || job.user_confirmed) && job.model_url && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={job.model_url} download>
+                                    <Download className="w-4 h-4" />
+                                  </a>
+                                </Button>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
@@ -223,6 +325,11 @@ export default function DashboardPage() {
                           <span className="capitalize">{job.status}</span>
                           <span>{new Date(job.created_at).toLocaleDateString()}</span>
                         </div>
+                        {job.status === "failed" && job.error_message && (
+                          <p className="text-xs text-destructive mt-1 truncate" title={job.error_message}>
+                            {job.error_message}
+                          </p>
+                        )}
                       </div>
                     </GlassCard>
                   </motion.div>

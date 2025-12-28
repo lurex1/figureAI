@@ -47,7 +47,8 @@ export function WorkflowContainer() {
       setIsGenerating(true);
       try {
         await startGeneration(jobData.id);
-        navigate(`/preview/${jobData.id}`);
+        // Redirect to review page where user can see the model and approve/reject
+        navigate(`/review/${jobData.id}`);
       } catch (error) {
         setIsGenerating(false);
       }

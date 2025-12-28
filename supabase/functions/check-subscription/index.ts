@@ -12,6 +12,19 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
+// Product ID to plan mapping
+const PRODUCT_TO_PLAN: Record<string, string> = {
+  'prod_TgbyCn0X5fiSUa': 'pro',
+  'prod_TgbyxWTWCj1dOv': 'creator',
+};
+
+// Credits per plan (monthly reset)
+const PLAN_CREDITS: Record<string, number> = {
+  'free': 15,
+  'pro': 200,
+  'creator': 800,
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -47,16 +60,17 @@ serve(async (req) => {
     if (customers.data.length === 0) {
       logStep("No Stripe customer found");
       
-      // Update local subscription table
+      // Update local subscription table with free credits
       await supabaseClient
         .from("subscriptions")
-        .update({ status: "inactive", plan: "free" })
+        .update({ status: "inactive", plan: "free", credits_balance: PLAN_CREDITS.free })
         .eq("user_id", user.id);
 
       return new Response(JSON.stringify({ 
         subscribed: false,
         plan: "free",
-        status: "inactive"
+        status: "inactive",
+        credits_balance: PLAN_CREDITS.free,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -83,14 +97,46 @@ serve(async (req) => {
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       cancelAtPeriodEnd = subscription.cancel_at_period_end;
       stripeSubscriptionId = subscription.id;
-      plan = "pro";
+      
+      // Determine plan from product ID
+      const productId = subscription.items.data[0]?.price?.product as string;
+      plan = PRODUCT_TO_PLAN[productId] || "pro";
+      
       logStep("Active subscription found", { 
         subscriptionId: subscription.id, 
         endDate: subscriptionEnd,
-        cancelAtPeriodEnd 
+        cancelAtPeriodEnd,
+        productId,
+        plan,
       });
     } else {
       logStep("No active subscription");
+    }
+
+    // Get current subscription data
+    const { data: currentSub } = await supabaseClient
+      .from("subscriptions")
+      .select("plan, credits_balance, current_period_end")
+      .eq("user_id", user.id)
+      .single();
+
+    // Check if we need to reset credits (new billing period or plan upgrade)
+    let creditsBalance = currentSub?.credits_balance ?? PLAN_CREDITS[plan];
+    const previousPlan = currentSub?.plan ?? "free";
+    const previousPeriodEnd = currentSub?.current_period_end;
+
+    // Reset credits if plan changed to higher tier OR new billing period started
+    if (hasActiveSub && subscriptionEnd) {
+      const isPlanUpgrade = plan !== previousPlan && PLAN_CREDITS[plan] > PLAN_CREDITS[previousPlan];
+      const isNewPeriod = previousPeriodEnd && new Date(subscriptionEnd) > new Date(previousPeriodEnd);
+      
+      if (isPlanUpgrade || isNewPeriod) {
+        creditsBalance = PLAN_CREDITS[plan];
+        logStep("Credits reset", { reason: isPlanUpgrade ? "plan_upgrade" : "new_period", credits: creditsBalance });
+      }
+    } else if (!hasActiveSub && previousPlan !== "free") {
+      // Downgraded to free
+      creditsBalance = Math.min(creditsBalance, PLAN_CREDITS.free);
     }
 
     // Update local subscription table
@@ -103,10 +149,11 @@ serve(async (req) => {
         plan: plan,
         current_period_end: subscriptionEnd,
         cancel_at_period_end: cancelAtPeriodEnd,
+        credits_balance: creditsBalance,
       })
       .eq("user_id", user.id);
 
-    logStep("Local subscription updated");
+    logStep("Local subscription updated", { plan, credits: creditsBalance });
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
@@ -114,6 +161,7 @@ serve(async (req) => {
       status: hasActiveSub ? "active" : "inactive",
       subscription_end: subscriptionEnd,
       cancel_at_period_end: cancelAtPeriodEnd,
+      credits_balance: creditsBalance,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

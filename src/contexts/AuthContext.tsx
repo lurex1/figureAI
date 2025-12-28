@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import type { SubscriptionPlan } from '@/lib/subscription-tiers';
 
 interface SubscriptionStatus {
   subscribed: boolean;
-  plan: 'free' | 'pro';
+  plan: SubscriptionPlan;
   status: 'active' | 'inactive' | 'canceled' | 'past_due';
   subscriptionEnd: string | null;
   cancelAtPeriodEnd: boolean;
+  creditsBalance: number;
 }
 
 interface AuthContextType {
@@ -28,6 +30,7 @@ const defaultSubscription: SubscriptionStatus = {
   status: 'inactive',
   subscriptionEnd: null,
   cancelAtPeriodEnd: false,
+  creditsBalance: 15,
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: data.status || 'inactive',
         subscriptionEnd: data.subscription_end || null,
         cancelAtPeriodEnd: data.cancel_at_period_end || false,
+        creditsBalance: data.credits_balance ?? 15,
       });
     } catch (err) {
       console.error('Failed to check subscription:', err);

@@ -2,18 +2,28 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { SubscriptionPlan } from '@/lib/subscription-tiers';
 
 export function useSubscription() {
   const [isLoading, setIsLoading] = useState(false);
   const { session, subscription, refreshSubscription } = useAuth();
   const { toast } = useToast();
 
-  const startCheckout = async () => {
+  const startCheckout = async (plan: SubscriptionPlan = 'pro') => {
     if (!session?.access_token) {
       toast({
         variant: 'destructive',
         title: 'Authentication Required',
         description: 'Please sign in to upgrade your subscription.',
+      });
+      return;
+    }
+
+    if (plan === 'free') {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Plan',
+        description: 'Free plan does not require checkout.',
       });
       return;
     }
@@ -25,6 +35,7 @@ export function useSubscription() {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
+        body: { plan },
       });
 
       if (error) {
@@ -91,5 +102,7 @@ export function useSubscription() {
     openCustomerPortal,
     refreshSubscription,
     isPro: subscription.plan === 'pro' && subscription.subscribed,
+    isCreator: subscription.plan === 'creator' && subscription.subscribed,
+    isPaid: subscription.subscribed && subscription.plan !== 'free',
   };
 }

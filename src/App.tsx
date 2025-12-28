@@ -12,6 +12,7 @@ import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Investors from "./pages/Investors";
+import ModelReview from "./pages/ModelReview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/create" element={<Create />} />
             <Route path="/preview" element={<Preview />} />
             <Route path="/preview/:jobId" element={<Preview />} />
+            <Route path="/review/:jobId" element={<ModelReview />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/investors" element={<Investors />} />
